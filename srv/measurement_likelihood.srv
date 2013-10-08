@@ -1,0 +1,4 @@
+geometry_msgs/Pose pose
+float64 likelihood
+float64 predicted_measurement
+float64 variance
