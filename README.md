@@ -1,0 +1,1 @@
+A ROS node for wifi mapping. Depends on the gaussian_process and wifi_scanner libraries. Once you clone the three repositories, you need to update the symbolic links in the root folder of this project, to point to the corret location of the dependencies.
