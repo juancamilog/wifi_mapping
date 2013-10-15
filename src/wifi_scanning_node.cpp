@@ -30,6 +30,7 @@ int main(int argc, char **argv)
     
     std::string interface_name;
     n.param<std::string>("interface_name",interface_name,DEFAULT_IFACE);
+    ROS_INFO("Scanning on %s", interface_name.c_str());
     wifi_scanner ws;
     
     std::function<scanning_callback> scan_callback = process_scan;
