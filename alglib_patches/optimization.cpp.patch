@@ -1,0 +1,68 @@
+849a850,882
+> void mincgoptimize2(mincgstate &state,
+>     std::function<void(const real_1d_array &x, double &func, real_1d_array &grad, void *ptr)> grad,
+>     std::function<void(const real_1d_array &x, double func, void *ptr)> rep, 
+>     void *ptr)
+> {
+>     alglib_impl::ae_state _alglib_env_state;
+>     if( grad==NULL )
+>         throw ap_error("ALGLIB: error in 'mincgoptimize()' (grad is NULL)");
+>     alglib_impl::ae_state_init(&_alglib_env_state);
+>     try
+>     {
+>         while( alglib_impl::mincgiteration(state.c_ptr(), &_alglib_env_state) )
+>         {
+>             if( state.needfg )
+>             {
+>                 grad(state.x, state.f, state.g, ptr);
+>                 continue;
+>             }
+>             if( state.xupdated )
+>             {
+>                 if( rep!=NULL )
+>                     rep(state.x, state.f, ptr);
+>                 continue;
+>             }
+>             throw ap_error("ALGLIB: error in 'mincgoptimize' (some derivatives were not provided?)");
+>         }
+>         alglib_impl::ae_state_clear(&_alglib_env_state);
+>     }
+>     catch(alglib_impl::ae_error_type)
+>     {
+>         throw ap_error(_alglib_env_state.error_msg);
+>     }
+> }
+2922a2956,2988
+> void minlbfgsoptimize2(minlbfgsstate &state,
+>     std::function<void(const real_1d_array &x, double &func, real_1d_array &grad, void *ptr)> grad,
+>     std::function<void(const real_1d_array &x, double func, void *ptr)> rep, 
+>     void *ptr)
+> {
+>     alglib_impl::ae_state _alglib_env_state;
+>     if( grad==NULL )
+>         throw ap_error("ALGLIB: error in 'minlbfgsoptimize()' (grad is NULL)");
+>     alglib_impl::ae_state_init(&_alglib_env_state);
+>     try
+>     {
+>         while( alglib_impl::minlbfgsiteration(state.c_ptr(), &_alglib_env_state) )
+>         {
+>             if( state.needfg )
+>             {
+>                 grad(state.x, state.f, state.g, ptr);
+>                 continue;
+>             }
+>             if( state.xupdated )
+>             {
+>                 if( rep!=NULL )
+>                     rep(state.x, state.f, ptr);
+>                 continue;
+>             }
+>             throw ap_error("ALGLIB: error in 'minlbfgsoptimize' (some derivatives were not provided?)");
+>         }
+>         alglib_impl::ae_state_clear(&_alglib_env_state);
+>     }
+>     catch(alglib_impl::ae_error_type)
+>     {
+>         throw ap_error(_alglib_env_state.error_msg);
+>     }
+> }

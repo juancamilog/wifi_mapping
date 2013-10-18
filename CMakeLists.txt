@@ -23,16 +23,15 @@ catkin_package(DEPENDS roscpp rospy std_msgs sensor_msgs geometry_msgs)
 ## Build ##
 ###########
 
-ADD_SUBDIRECTORY(gaussian_process)
-ADD_SUBDIRECTORY(wifi_scanner)
-
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  wifi_scanner/include
+  deps/wifi_scanner/include
+  deps/gaussian_process/include
 )
+link_directories( ${LINK_DIRECTORIES} deps/wifi_scanner/lib deps/gaussian_process/lib)
 
 ## Declare a cpp executable
 add_executable(wifi_scanning_node src/wifi_scanning_node.cpp)
