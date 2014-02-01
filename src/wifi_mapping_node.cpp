@@ -1,5 +1,7 @@
 #include "gaussian_process.h"
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Quaternion.h>
 #include "wifi_mapping/wifi_measurement.h"
 #include <Eigen/Dense>
 #include <map>
@@ -8,11 +10,19 @@ std::map<Eigen::MatrixXd> position_data;
 std::map<Eigen::MatrixXd> signal_measurements;
 
 void gp_callback( const geometry_msgs::PoseWithCovarianceStamped::ConstPtr & pose_msg, wifi_mapping::wifi_measurement::ConstPtr &wifi_msg){
-    //ROS_INFO("pose x %f y %f z %f"   
+    ROS_INFO("New data point for %s",wifi_msg.id.c_str());
+    geometry_msgs::point pos = pose_msg.pose.pose.position;
+    geometry_msgs::Quaternion quat = pose_msg.pose.pose.orientation;
+
+    ROS_INFO("Position [%f %f %f]",pos.x,pos.y,pos.z);
+    ROS_INFO("Orientation [%f %f %f %f]",quat.x,quat.y,quat.z,quat.w);
+    ROS_INFO("Signal Strength [%f] ",wifi_msg.signal_strength);
     
     // construct measurement vector 
+    MatrixXd x(3,1);
+    
     // compute covariance of measurement vector with dataset
-    // 
+    
     
 }
 
