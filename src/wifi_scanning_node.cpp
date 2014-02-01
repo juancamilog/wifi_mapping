@@ -40,8 +40,11 @@ void process_scan(access_point &ap){
             wifi_signature[wm.id] = wm;
             ROS_INFO("wifi_scanning_node:: Found new access point %s",wifi_signature[wm.id].id.c_str());
         } else { 
-            wifi_signature[wm.id].signal_strength = wifi_signature[wm.id].signal_strength*(1-alpha) +wm.signal_strength*alpha;
-            wifi_signature[wm.id].noise = wifi_signature[wm.id].noise*(1-alpha) +wm.noise*alpha;
+            wifi_signature[wm.id].header.seq += 1;
+            double delta = wm.signal_strength - wifi_signature[wm.id].signal_strength;
+            wifi_signature[wm.id].signal_strength = wifi_signature[wm.id].signal_strength + delta/wifi_signature[wm.id].header.seq;
+            delta = wm.noise - wifi_signature[wm.id].noise;
+            wifi_signature[wm.id].noise = wifi_signature[wm.id].noise + delta/wifi_signature[wm.id].header.seq;
             wifi_signature[wm.id].header.stamp = wm.header.stamp;
             ROS_INFO("wifi_scanning_node:: Updated %s with signal strength %f",wifi_signature[wm.id].id.c_str(),wifi_signature[wm.id].signal_strength);
         }
@@ -52,16 +55,16 @@ bool get_wifi_signature(wifi_mapping::get_wifi_signature::Request &req, wifi_map
     ROS_INFO("wifi_scanning_node:: Got call to compute the wifi signature with arguments [%d %f]",req.size,req.timeout);
     double timeout = req.timeout;
     std::chrono::duration<double> elapsed_time(0.0);
-    std::chrono::duration<double> sleep_duration(2.0);
+    std::chrono::duration<double> sleep_duration(timeout/10.0);
     std::chrono::time_point<std::chrono::system_clock> start,end; 
     wifi_signature.clear();
     compute_signature = true;
     start = std::chrono::system_clock::now();
     while(elapsed_time.count() < timeout){
          ROS_INFO("wifi_scanning_node:: Computing the wifi signature. %f seconds left...", (timeout - elapsed_time.count()));
+         std::this_thread::sleep_for(sleep_duration);
          end = std::chrono::system_clock::now();
          elapsed_time = end-start;
-         std::this_thread::sleep_for(sleep_duration);
     }
     ROS_INFO("wifi_scanning_node:: Got %d access points.", (int)wifi_signature.size());
     compute_signature = false;

@@ -12,10 +12,10 @@ find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs geometry_msgs sens
 add_message_files(DIRECTORY msg FILES wifi_measurement.msg)
 
 ## Generate services in the 'srv' folder
-add_service_files(DIRECTORY srv FILES measurement_likelihood.srv)
+add_service_files(DIRECTORY srv FILES get_wifi_signature.srv measurement_likelihood.srv)
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(DEPENDENCIES std_msgs geometry_msgs)
+generate_messages(DEPENDENCIES std_msgs geometry_msgs wifi_mapping)
 
 catkin_package(DEPENDS roscpp rospy std_msgs sensor_msgs geometry_msgs)
 
@@ -36,4 +36,5 @@ link_directories( ${LINK_DIRECTORIES} deps/wifi_scanner/lib deps/gaussian_proces
 ## Declare a cpp executable
 add_executable(wifi_scanning_node src/wifi_scanning_node.cpp)
 target_link_libraries(wifi_scanning_node wifi_scanner ${catkin_LIBRARIES})
+add_dependencies(wifi_scanning_node wifi_mapping_gencpp)
 

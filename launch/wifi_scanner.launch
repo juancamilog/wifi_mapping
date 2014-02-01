@@ -1,5 +1,5 @@
 <launch>
     <node pkg="wifi_mapping" type="wifi_scanning_node" name="wifi_scanner" output="screen">
-        <param  name="interface_name" value="wlan3"/>
+        <param  name="interface_name" value="wlan6"/>
     </node>
 </launch>

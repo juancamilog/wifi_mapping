@@ -1,0 +1,4 @@
+uint32 size
+float64 timeout
+---
+wifi_mapping/wifi_measurement[] signature
