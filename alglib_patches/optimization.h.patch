@@ -5,7 +5,17 @@
 >     std::function<void(const real_1d_array &x, double &func, real_1d_array &grad, void *ptr)> grad,
 >     std::function<void(const real_1d_array &x, double func, void *ptr)> rep = NULL, 
 >     void *ptr = NULL);
-2452c2457,2460
+1968a1974,1977
+> void minbleicoptimize2(minbleicstate &state,
+>     std::function<void(const real_1d_array &x, double &func, real_1d_array &grad, void *ptr)> grad,
+>     std::function<void(const real_1d_array &x, double func, void *ptr)> rep = NULL, 
+>     void *ptr=NULL);
+2447a2457,2460
+> void minlbfgsoptimize2(minlbfgsstate &state,
+>     std::function<void(const real_1d_array &x, double &func, void *ptr)> func,
+>     std::function<void(const real_1d_array &x, double func, void *ptr)> rep=NULL, 
+>     void *ptr= NULL);
+2452c2465,2468
 < 
 ---
 > void minlbfgsoptimize2(minlbfgsstate &state,
