@@ -7,6 +7,7 @@
 #include "wifi_mapping/get_wifi_signature.h"
 
 const std::string DEFAULT_IFACE = "wlan0";
+const double DEFAULT_RATE_HZ = 1.0;
 
 ros::Publisher wifi_publisher;
 ros::Subscriber pose_subscriber;
@@ -93,13 +94,17 @@ int main(int argc, char **argv)
     
     std::string interface_name;
     n.param<std::string>("interface_name",interface_name,DEFAULT_IFACE);
-    ROS_INFO("wifi_scanning_node:: Scanning on %s", interface_name.c_str());
+
+    double scanning_rate_hz;
+    n.param<double>("scanning_rate",scanning_rate_hz,DEFAULT_RATE_HZ);
+
+    ROS_INFO("wifi_scanning_node:: Scanning on %s at %f hz.", interface_name.c_str(), scanning_rate_hz);
     wifi_scanner ws;
     
     ros::ServiceServer signature_service = n.advertiseService("get_wifi_signature",get_wifi_signature);
 
     std::function<scanning_callback> scan_callback = process_scan;
-    ros::Rate r(1.0);
+    ros::Rate r(scanning_rate_hz);
     ros::AsyncSpinner spinner(1);
     spinner.start();
     if (ws.init(std::string(interface_name), scan_callback)){

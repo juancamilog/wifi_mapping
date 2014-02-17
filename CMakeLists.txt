@@ -6,7 +6,8 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=gnu++0x")
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs geometry_msgs sensor_msgs genmsg pcl_ros pcl_conversions)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs geometry_msgs sensor_msgs genmsg pcl_ros pcl_conversions message_filters)
+find_package(Boost REQUIRED COMPONENTS system)
 
 ## Generate messages in the 'msg' folder
 add_message_files(DIRECTORY msg FILES wifi_measurement.msg)
@@ -40,5 +41,5 @@ target_link_libraries(wifi_scanning_node wifi_scanner ${catkin_LIBRARIES})
 add_dependencies(wifi_scanning_node wifi_mapping_gencpp)
 
 add_executable(wifi_mapping_node src/wifi_mapping_node.cpp)
-target_link_libraries(wifi_mapping_node gaussian_process alglib ${catkin_LIBRARIES})
+target_link_libraries(wifi_mapping_node gaussian_process alglib ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(wifi_scanning_node wifi_mapping_gencpp)
