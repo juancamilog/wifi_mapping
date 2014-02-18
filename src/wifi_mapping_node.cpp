@@ -22,8 +22,9 @@ const std::string DEFAULT_ODOM_TOPIC = "/odom";
 
 std::map<std::string,gaussian_process> GP;
 std::map<std::string,double> variance_threshold;
-typedef std::pair<ros::Publisher,std::function<void(void)>> gp_pcl_pair;
-std::map<std::string,gp_pcl_pair > gp_pcl_publishers;
+std::map<std::string, std::function<void(void)>> gp_pcl_pub_funcs;
+std::map<std::string, ros::Publisher> gp_pcl_pub_mean;
+std::map<std::string, ros::Publisher> gp_pcl_pub_var;
 std::map<std::string,std::shared_ptr<std::mutex>> gp_pcl_pub_mutex;
 
 std::string published_gp_id = "";
@@ -41,89 +42,103 @@ void create_new_pcl_publisher(std::string id){
     std::string id_new(id);
     replace_(id_new);
     ros::NodeHandle nh("~");
-    ros::Publisher gp_pcl_pub = nh.advertise<sensor_msgs::PointCloud2>("pcloud_"+id_new,1,true);
+    ros::Publisher gp_pcl_pub_m = nh.advertise<sensor_msgs::PointCloud2>("pcloud_"+id_new+"_mean",1,true);
+    ros::Publisher gp_pcl_pub_v = nh.advertise<sensor_msgs::PointCloud2>("pcloud_"+id_new+"_var",1,true);
     
     gp_pcl_pub_mutex[id] = std::shared_ptr<std::mutex>(new std::mutex());
 
-    std::function<void(void)> gp_pcl_publish_clouds = [id,&gp_pcl_publishers,&gp_pcl_pub,&GP](){ 
+    std::function<void(void)> gp_pcl_publish_clouds = [id,&gp_pcl_pub_mean,&gp_pcl_pub_var,&GP](){ 
+        gp_pcl_pub_mutex[id]->lock();
         //if (gp_pcl_pub.getNumSubscribers()==0){
         //    return;
         //}
         ROS_INFO("Publishing point cloud for %s ",id.c_str());
 
-        pcl::PointCloud<pcl::PointXYZ> cloud_val, cloud_var;
+        pcl::PointCloud<pcl::PointXYZI> cloud_mean, cloud_var;
 
-        double grid_size = 50; // 50 meters
-        double resolution = 0.5; //0.5 meters
+        double grid_size = 50; // 10 meters
+        int n_points = 30000; // 10 meters
 
-        // cloud for storing the signal strength predictions
-        cloud_val.width = std::floor(2.0*grid_size/resolution);
-        cloud_val.height = 1;
-        cloud_val.points.resize(cloud_val.width*cloud_val.height);
-        cloud_val.header.frame_id = "base_link";
-        // cloud for storing the variance of measurements
-        cloud_var.width = std::floor(2.0*grid_size/resolution);
-        cloud_var.height = 1;
-        cloud_var.points.resize(cloud_var.width*cloud_var.height);
-        cloud_val.header.frame_id = "base_link";
+        cloud_mean.header.frame_id = "odom";
+        cloud_var.header.frame_id = "odom";
 
         int idx =0;
         double z_var;
-        VectorXd z_val;
+        VectorXd z_mean;
         VectorXd X = VectorXd::Zero(GP[id].input_dimensions());
 
-        gp_pcl_pub_mutex[id]->lock();
-        for (double x=-grid_size; x<grid_size; x+=resolution){
-            for (double y=-grid_size; y<grid_size; y+=resolution){
-                cloud_val[idx].x = x;
-                cloud_val[idx].y = y;
-                cloud_var[idx].x = x;
-                cloud_var[idx].y = y;
+        for (idx=0; idx < n_points ; idx++){
+                pcl::PointXYZI mean, variance;
+                //cloud_val[idx].x = x;
+                //cloud_val[idx].y = y;
+                //cloud_var[idx].x = x;
+                //cloud_var[idx].y = y;
+                X = VectorXd::Random(2)*grid_size;
+                mean.x = X[0]; variance.x = X[0];
+                mean.y = X[1]; variance.y = X[1];
 
                 // computed predicted singal measruement and variance
-                X[0]= x;
-                X[1]= y;
-                GP[id].prediction(X,z_val,z_var);
+                //X[0]= x;
+                //X[1]= y;
+                GP[id].prediction(X,z_mean,z_var);
 
-                cloud_val[idx].z = z_val[0] ;
-                cloud_var[idx].z = z_var ;
-            }
+                //cloud_val[idx].z = z_val[0] ;
+                //cloud_var[idx].z = z_var ;
+                mean.z = z_mean[0];
+                variance.z = z_var;
+                mean.intensity = z_mean[0]; variance.intensity = z_var;
+                cloud_mean.push_back(mean);
+                cloud_var.push_back(variance);
         }
-        gp_pcl_pub_mutex[id]->unlock();
         
         // publish point cloud
-        gp_pcl_publishers[id].first.publish(cloud_val);
-        ROS_INFO("Published %d points ",cloud_val.width*cloud_val.height);
+        //pcl::toROSMsg(cloud_val,output);
+        gp_pcl_pub_mean[id].publish(cloud_mean);
+        gp_pcl_pub_var[id].publish(cloud_var);
+        ROS_INFO("Published %d points ", idx);
+        gp_pcl_pub_mutex[id]->unlock();
     };
 
     // create ros publisher object and publishing function pair. add it to the map
-    gp_pcl_publishers[id] = gp_pcl_pair(gp_pcl_pub,gp_pcl_publish_clouds);
+    gp_pcl_pub_mean[id] = gp_pcl_pub_m;
+    gp_pcl_pub_var[id] = gp_pcl_pub_v;
+    gp_pcl_pub_funcs[id] = gp_pcl_publish_clouds;
 };
 
 void gp_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &pose_msg, const wifi_mapping::wifi_measurement::ConstPtr &wifi_msg){
     std::string ap_id = wifi_msg->id;
     geometry_msgs::Point pos = pose_msg->pose.pose.position;
     geometry_msgs::Quaternion quat = pose_msg->pose.pose.orientation;
-
-    
     // construct measurement vector, for the moment, we only use location data
     VectorXd x(3);
     x << pos.x,pos.y,pos.z;
+    double ss = wifi_msg->signal_strength/255.0;
 
+    ROS_INFO("pose_msg time: %f, wifi_msg time: %f", pose_msg->header.stamp.toSec(), wifi_msg->header.stamp.toSec());
+    ROS_INFO("Position [%f %f %f]",pos.x,pos.y,pos.z);
+    ROS_INFO("Signal Strength [%f] ",ss*100.0);
+    
     // create new GP if it does not already exist
     if (GP.find(ap_id) == GP.end() ){
+        // keep a bounded number of GP in memory
+        if(GP.size() >=5){
+            return;
+        }
         GP[ap_id] = gaussian_process();
-        GP[ap_id].add_sample(x,wifi_msg->signal_strength);
-        ROS_INFO("New data point for %s",ap_id.c_str());
+        GP[ap_id].add_sample(x,ss);
+        ROS_INFO("New sample for %s",ap_id.c_str());
         //ROS_INFO("Position [%f %f %f]",pos.x,pos.y,pos.z);
         //ROS_INFO("Orientation [%f %f %f %f]",quat.x,quat.y,quat.z,quat.w);
         //ROS_INFO("Signal Strength [%f] ",wifi_msg->signal_strength);
         GP[ap_id].set_SE_kernel();
 
-        Vector4d init_params = VectorXd::Random(4).cwiseAbs()*10;
+        Vector4d init_params = VectorXd::Random(4).cwiseAbs()*4;
+        for (int i=0; i<init_params.size(); i++){
+            init_params(i) += 1.0;
+        }
         GP[ap_id].set_opt_starting_point(init_params);
         create_new_pcl_publisher(ap_id);
-        gp_pcl_publishers[ap_id].second();
+        gp_pcl_pub_funcs[ap_id]();
 
         ROS_INFO("Created new GP estimator");
     } else {
@@ -133,18 +148,21 @@ void gp_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &pose_
 
         GP[ap_id].prediction(x,predicted_signal_strength,prediction_variance);
         //ROS_INFO("Measured Signal Strength: %f, Prediction: %f, Variance: %f",wifi_msg->signal_strength,predicted_signal_strength[0],prediction_variance);
-        if(prediction_variance >= variance_threshold[ap_id]){
-            ROS_INFO("New data point for %s",ap_id.c_str());
+        if(prediction_variance >= 0.5*variance_threshold[ap_id]){
+            ROS_INFO("New sample for %s",ap_id.c_str());
             //ROS_INFO("Position [%f %f %f]",pos.x,pos.y,pos.z);
             //ROS_INFO("Orientation [%f %f %f %f]",quat.x,quat.y,quat.z,quat.w);
             //ROS_INFO("Signal Strength [%f] ",wifi_msg->signal_strength);
 
             gp_pcl_pub_mutex[ap_id]->lock();
-            GP[ap_id].add_sample(x,wifi_msg->signal_strength);
-            GP[ap_id].optimize_parameters();
+            GP[ap_id].add_sample(x,ss);
+            ROS_INFO("Total data points: %d",GP[ap_id].dataset_size());
+            if(GP[ap_id].dataset_size()>10){
+                GP[ap_id].optimize_parameters();
+            }
             variance_threshold[ap_id] = GP[ap_id].compute_maximum_variance();
             gp_pcl_pub_mutex[ap_id]->unlock();
-            gp_pcl_publishers[ap_id].second();
+            gp_pcl_pub_funcs[ap_id]();
        }
     }
 };

@@ -1,0 +1,3 @@
+<launch>
+	<node pkg="map_server" type="map_saver" name="save_map" args="-f /localdata/gamboa/gp_map"/>
+</launch>

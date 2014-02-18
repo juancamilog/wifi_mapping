@@ -1,14 +1,14 @@
 <launch>
-    <include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
-    <node pkg="wifi_mapping" type="wifi_scanning_node" name="wifi_scanner">
-        <param  name="interface_name" value="wlan1"/>
+    <node pkg="wifi_mapping" type="wifi_scanning_node" name="wifi_scanner" output="screen">
+        <param  name="interface_name" value="wlan3"/>
+        <param  name="scanning_rate" value="0.5"/>
     </node>
-    <node pkg="hokuyo_node" type="hokuyo_node" name="laser_scanner">
-        <param name="min_ang" value="-2.0"/>
-        <param name="max_ang" value="2.0"/>
+    <node pkg="wifi_mapping" type="wifi_mapping_node" name="wifi_gp" output="screen">
+        <param  name="wifi_topic" value="/wifi_scanner/wifi_measurement"/>
+        <param  name="odometry_topic" value="/robot_pose_ekf/odom"/>
     </node>
-    <node pkg="tf" type="static_transform_publisher" name="laser_broadcaster" args="0 0 0.1 0 0 0 plate_middle_link /laser 100"/>
     <include file="$(find wifi_mapping)/launch/_gmapping.launch"/>
-    <include file="$(find turtlebot_teleop)/launch/ps3_teleop.launch"/>
 
+    <node pkg="rosbag" type="record" name="rosbag_record_gp"
+          args="--output-prefix=/localdata/gamboa/gp /robot_pose_ekf/odom /wifi_scanner/wifi_measurement" />
 </launch>

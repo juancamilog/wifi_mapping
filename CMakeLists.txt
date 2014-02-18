@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(wifi_mapping)
 
 SET(CMAKE_BUILD_TYPE Release)
+#SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=gnu++0x")
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
