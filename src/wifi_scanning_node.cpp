@@ -109,7 +109,7 @@ int main(int argc, char **argv)
     spinner.start();
     if (ws.init(std::string(interface_name), scan_callback)){
         while ( ros::ok() ){
-            res = ws.scan();
+            int res = ws.scan();
             if (res!=0){
                  ROS_ERROR("wifi_scanning_node:: Scan failed. Return code was %d", res);
             }

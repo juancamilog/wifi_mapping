@@ -7,6 +7,10 @@
         <param  name="wifi_topic" value="/wifi_scanner/wifi_measurement"/>
         <param  name="odometry_topic" value="/robot_pose_ekf/odom"/>
     </node>
-    <node pkg="rosbag" type="record" name="rosbag_record_gp"
-          args="--output-prefix=/localdata/gamboa/gp /robot_pose_ekf/odom /wifi_scanner/wifi_measurement" />
+    <node pkg="rosbag" type="record" name="rosbag_record_wifi"
+          args="--output-prefix=/localdata/gamboa/gp_wifi /robot_pose_ekf/odom /wifi_scanner/wifi_measurement" />
+    <node pkg="rosbag" type="record" name="rosbag_record_laser"
+          args="--output-prefix=/localdata/gamboa/gp_laser /lidar/scan" />
+    <node pkg="rosbag" type="record" name="rosbag_record_loc"
+          args="--output-prefix=/localdata/gamboa/gp_loc /imu/data /imu/mag /encoder /tf /tf_static" />
 </launch>

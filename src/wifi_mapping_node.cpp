@@ -106,27 +106,30 @@ void create_new_pcl_publisher(std::string id){
 };
 
 void gp_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &pose_msg, const wifi_mapping::wifi_measurement::ConstPtr &wifi_msg){
+    if (wifi_msg->essid.compare(0,3,"CPR")==0){
+        return;
+    }
     std::string ap_id = wifi_msg->id;
     geometry_msgs::Point pos = pose_msg->pose.pose.position;
     geometry_msgs::Quaternion quat = pose_msg->pose.pose.orientation;
     // construct measurement vector, for the moment, we only use location data
     VectorXd x(3);
     x << pos.x,pos.y,pos.z;
-    double ss = wifi_msg->signal_strength/255.0;
-
-    ROS_INFO("pose_msg time: %f, wifi_msg time: %f", pose_msg->header.stamp.toSec(), wifi_msg->header.stamp.toSec());
-    ROS_INFO("Position [%f %f %f]",pos.x,pos.y,pos.z);
-    ROS_INFO("Signal Strength [%f] ",ss*100.0);
+    double ss = 100*wifi_msg->signal_strength/255.0; 
+     
+    ROS_INFO("========>\n New sample for %s (essid: %s)",ap_id.c_str(),wifi_msg->essid.c_str()); 
+    ROS_INFO("pose_msg time: %f, wifi_msg time: %f", pose_msg->header.stamp.toSec(), wifi_msg->header.stamp.toSec()); 
+    ROS_INFO("Position [%f %f %f]",pos.x,pos.y,pos.z); 
+    ROS_INFO("Signal Strength [%f] ",ss*100.0); 
     
     // create new GP if it does not already exist
     if (GP.find(ap_id) == GP.end() ){
         // keep a bounded number of GP in memory
-        if(GP.size() >=5){
+        if(GP.size() >=15){
             return;
         }
         GP[ap_id] = gaussian_process();
         GP[ap_id].add_sample(x,ss);
-        ROS_INFO("New sample for %s",ap_id.c_str());
         //ROS_INFO("Position [%f %f %f]",pos.x,pos.y,pos.z);
         //ROS_INFO("Orientation [%f %f %f %f]",quat.x,quat.y,quat.z,quat.w);
         //ROS_INFO("Signal Strength [%f] ",wifi_msg->signal_strength);
@@ -148,16 +151,14 @@ void gp_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &pose_
 
         GP[ap_id].prediction(x,predicted_signal_strength,prediction_variance);
         //ROS_INFO("Measured Signal Strength: %f, Prediction: %f, Variance: %f",wifi_msg->signal_strength,predicted_signal_strength[0],prediction_variance);
-        if(prediction_variance >= 0.5*variance_threshold[ap_id]){
-            ROS_INFO("New sample for %s",ap_id.c_str());
-            //ROS_INFO("Position [%f %f %f]",pos.x,pos.y,pos.z);
-            //ROS_INFO("Orientation [%f %f %f %f]",quat.x,quat.y,quat.z,quat.w);
-            //ROS_INFO("Signal Strength [%f] ",wifi_msg->signal_strength);
-
+        bool add_measurement = (prediction_variance >= 0.5*variance_threshold[ap_id]) || (GP[ap_id].dataset_size()<50);
+        
+        if(add_measurement){
             gp_pcl_pub_mutex[ap_id]->lock();
             GP[ap_id].add_sample(x,ss);
+            ROS_INFO("Added sample to GP estimator");
             ROS_INFO("Total data points: %d",GP[ap_id].dataset_size());
-            if(GP[ap_id].dataset_size()>10){
+            if(GP[ap_id].dataset_size()>5){
                 GP[ap_id].optimize_parameters();
             }
             variance_threshold[ap_id] = GP[ap_id].compute_maximum_variance();
