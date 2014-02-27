@@ -12,6 +12,7 @@ const double DEFAULT_RATE_HZ = 1.0;
 ros::Publisher wifi_publisher;
 ros::Subscriber pose_subscriber;
 std::map<std::string,wifi_mapping::wifi_measurement> wifi_signature;
+wifi_mapping::wifi_measurement wm;
 
 bool compute_signature = false;
 double alpha = 0.75;
@@ -23,7 +24,6 @@ struct {
 } signal_strength_compare;
 
 void process_scan(access_point &ap){
-    wifi_mapping::wifi_measurement wm;
 
     wm.id = ap.mac_address;
     wm.channel = ap.frequency;
@@ -31,6 +31,7 @@ void process_scan(access_point &ap){
     wm.noise = ap.signal_noise;
     wm.essid = ap.essid;
     wm.header.stamp = ros::Time().fromSec(ap.timestamp);
+    wm.header.seq +=1;
 
     wifi_publisher.publish(wm);
     //ROS_INFO("wifi_scanning_node:: published %s",wm.id.c_str());
@@ -38,7 +39,7 @@ void process_scan(access_point &ap){
     if(compute_signature){
         //ROS_INFO("wifi_scanning_node:: computing signature");
         if ( wifi_signature.find(wm.id) == wifi_signature.end() ){
-            wifi_signature[wm.id] = wm;
+            wifi_signature[wm.id] = wifi_mapping::wifi_measurement(wm);
             ROS_INFO("wifi_scanning_node:: Found new access point %s",wifi_signature[wm.id].id.c_str());
         } else { 
             wifi_signature[wm.id].header.seq += 1;
@@ -90,7 +91,6 @@ int main(int argc, char **argv)
     ros::NodeHandle n("~");
   
     wifi_publisher = n.advertise<wifi_mapping::wifi_measurement>("wifi_measurement", 1);
-    //ros::Subscriber pose = n.subscribe(pose_topic, update_current);
     
     std::string interface_name;
     n.param<std::string>("interface_name",interface_name,DEFAULT_IFACE);

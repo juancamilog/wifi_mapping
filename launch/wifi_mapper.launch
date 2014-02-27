@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="wifi_mapping" type="wifi_mapping_node" name="wifi_gp" output="screen">
+        <param  name="wifi_topic" value="/wifi_scanner/wifi_measurement"/>
+        <param  name="odometry_topic" value="/amcl_pose"/>
+        <param  name="cloud_frame_id" value="map"/>
+    </node>
+</launch>

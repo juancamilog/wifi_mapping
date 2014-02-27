@@ -4,10 +4,11 @@ project(wifi_mapping)
 SET(CMAKE_BUILD_TYPE Release)
 #SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=gnu++0x")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -O3 -DNDEBUG")
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs geometry_msgs sensor_msgs genmsg pcl_ros pcl_conversions message_filters)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs geometry_msgs sensor_msgs genmsg pcl_ros pcl_conversions message_filters tf tf_conversions)
 find_package(Boost REQUIRED COMPONENTS system)
 
 ## Generate messages in the 'msg' folder
@@ -19,7 +20,7 @@ add_service_files(DIRECTORY srv FILES get_wifi_signature.srv measurement_likelih
 ## Generate added messages and services with any dependencies listed here
 generate_messages(DEPENDENCIES std_msgs geometry_msgs wifi_mapping)
 
-catkin_package(DEPENDS roscpp rospy std_msgs sensor_msgs geometry_msgs)
+catkin_package(INCLUDE_DIRS include DEPENDS roscpp rospy std_msgs sensor_msgs geometry_msgs)
 
 ###########
 ## Build ##
@@ -29,6 +30,7 @@ catkin_package(DEPENDS roscpp rospy std_msgs sensor_msgs geometry_msgs)
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
   deps/wifi_scanner/include
   deps/gaussian_process/include
@@ -36,11 +38,14 @@ include_directories(
 )
 link_directories( ${LINK_DIRECTORIES} deps/wifi_scanner/lib deps/gaussian_process/lib)
 
-## Declare a cpp executable
+add_library(gaussian_process_regressor src/gaussian_process_regressor.cpp)
+target_link_libraries(gaussian_process_regressor gaussian_process alglib ${catkin_LIBRARIES})
+add_dependencies(gaussian_process_regressor wifi_mapping_gencpp)
+
 add_executable(wifi_scanning_node src/wifi_scanning_node.cpp)
 target_link_libraries(wifi_scanning_node wifi_scanner ${catkin_LIBRARIES})
 add_dependencies(wifi_scanning_node wifi_mapping_gencpp)
 
 add_executable(wifi_mapping_node src/wifi_mapping_node.cpp)
-target_link_libraries(wifi_mapping_node gaussian_process alglib ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(wifi_mapping_node gaussian_process_regressor ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(wifi_scanning_node wifi_mapping_gencpp)
