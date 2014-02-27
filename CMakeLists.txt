@@ -38,14 +38,14 @@ include_directories(
 )
 link_directories( ${LINK_DIRECTORIES} deps/wifi_scanner/lib deps/gaussian_process/lib)
 
-add_library(gaussian_process_regressor src/gaussian_process_regressor.cpp)
-target_link_libraries(gaussian_process_regressor gaussian_process alglib ${catkin_LIBRARIES})
-add_dependencies(gaussian_process_regressor wifi_mapping_gencpp)
+add_library(signal_strength_estimator src/signal_strength_estimator.cpp)
+target_link_libraries(signal_strength_estimator gaussian_process alglib ${catkin_LIBRARIES})
+add_dependencies(signal_strength_estimator wifi_mapping_gencpp)
 
 add_executable(wifi_scanning_node src/wifi_scanning_node.cpp)
 target_link_libraries(wifi_scanning_node wifi_scanner ${catkin_LIBRARIES})
 add_dependencies(wifi_scanning_node wifi_mapping_gencpp)
 
 add_executable(wifi_mapping_node src/wifi_mapping_node.cpp)
-target_link_libraries(wifi_mapping_node gaussian_process_regressor ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(wifi_mapping_node signal_strength_estimator ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(wifi_scanning_node wifi_mapping_gencpp)

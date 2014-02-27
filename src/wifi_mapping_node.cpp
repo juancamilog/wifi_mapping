@@ -1,6 +1,6 @@
 #include "ros/ros.h"
 #include <boost/bind.hpp>
-#include "gaussian_process_regressor.h"
+#include "signal_strength_estimator.h"
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -14,7 +14,7 @@ const std::string DEFAULT_WIFI_TOPIC = "/wifi_scanning_node/wifi_measurement";
 const std::string DEFAULT_BASE_FRAME_ID = "base_footprint";
 const std::string DEFAULT_FIXED_FRAME_ID = "map";
 
-std::map<std::string,gaussian_process_regressor> gpr;
+std::map<std::string,std::shared_ptr<signal_strength_estimator>> gpr;
 
 geometry_msgs::PoseWithCovarianceStamped current_pose;
 
@@ -42,18 +42,17 @@ void wifi_callback(ros::NodeHandle &nh, const wifi_mapping::wifi_measurement::Co
         return;
     }
     std::string ap_id = wifi_msg->id;
-    //ROS_INFO("wifi_msg->header.seq: %d, wifi_msg->header.stamp: %f",wifi_msg->header.seq,wifi_msg->header.stamp.toSec());
+    ROS_INFO("============>\n\twifi_msg->header.seq: %d, wifi_msg->header.stamp: %f",wifi_msg->header.seq,wifi_msg->header.stamp.toSec());
     
     // create new GP if it does not already exist
     if (gpr.find(ap_id) == gpr.end() ){
         // keep a bounded number of GP in memory
-        if(gpr.size() >=50){
+        if(gpr.size() >=100){
             return;
         }
-        gaussian_process_regressor gp_reg(nh, ap_id, fixed_frame_id);
-        gpr[ap_id] = gp_reg;
+        gpr[ap_id] = std::shared_ptr<signal_strength_estimator>(new signal_strength_estimator(nh, ap_id, fixed_frame_id));
     } 
-    gpr[ap_id].process_measurement(pose_transform, wifi_msg);
+    gpr[ap_id]->process_measurement(pose_transform, wifi_msg);
 };
 
 
@@ -69,7 +68,7 @@ int main(int argc, char **argv)
     nh.param<std::string>("fixed_frame_id",fixed_frame_id,DEFAULT_FIXED_FRAME_ID);
     nh.param<std::string>("base_frame_id",base_frame_id,DEFAULT_BASE_FRAME_ID);
   
-    ros::Subscriber wifi_scan_sub = nh.subscribe<wifi_mapping::wifi_measurement>(wifi_topic, 1, boost::bind(&wifi_callback, boost::ref(nh), _1));
+    ros::Subscriber wifi_scan_sub = nh.subscribe<wifi_mapping::wifi_measurement>(wifi_topic, 10, boost::bind(&wifi_callback, boost::ref(nh), _1));
 
     ros::AsyncSpinner spinner(1);
     spinner.start();

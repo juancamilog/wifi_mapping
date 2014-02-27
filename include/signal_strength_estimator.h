@@ -13,9 +13,9 @@
 #include <geometry_msgs/Quaternion.h>
 #include "wifi_mapping/wifi_measurement.h"
 
-class gaussian_process_regressor{
+class signal_strength_estimator{
     private:
-        gaussian_process GP;
+        gaussian_process* GP;
         double variance_threshold;
         std::string fixed_frame_id;
         std::string ap_id;
@@ -26,8 +26,8 @@ class gaussian_process_regressor{
         std::shared_ptr<std::mutex> gp_mutex;
 
     public:
-        gaussian_process_regressor();
-        gaussian_process_regressor(ros::NodeHandle &nh, std::string id, std::string frame_id);
+        signal_strength_estimator();
+        signal_strength_estimator(ros::NodeHandle &nh, std::string id, std::string frame_id);
         void publish_clouds();
         void process_measurement(tf::StampedTransform &pose_transform, const wifi_mapping::wifi_measurement::ConstPtr &wifi_msg);
 };
