@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher"/>
+    <include file="$(find wifi_mapping)/launch/_amcl.launch"/>
+    <include file="$(find wifi_mapping)/launch/wifi_scanner.launch"/>
+</launch>
