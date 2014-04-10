@@ -13,4 +13,6 @@
           args="--output-prefix=/localdata/gamboa/gp_laser /lidar/scan" />
     <node pkg="rosbag" type="record" name="rosbag_record_loc"
           args="--output-prefix=/localdata/gamboa/gp_loc /imu/data /imu/mag /encoder /tf /tf_static" />
+    <node pkg="rosbag" type="record" name="rosbag_record_base"
+          args="--output-prefix=/localdata/gamboa/gp_base /husky/data/encoders /husky/data/power_status /husky/data/safety_status /husky/data/system_status /husky/robot /husky/cmd_freq /husky/cmd_vel /diagnostics /diagnostics_agg /diagnostics/top_level_state" />
 </launch>
