@@ -47,7 +47,7 @@ void wifi_callback(ros::NodeHandle &nh, const wifi_mapping::wifi_measurement::Co
     // create new GP if it does not already exist
     if (gpr.find(ap_id) == gpr.end() ){
         // keep a bounded number of GP in memory
-        if(gpr.size() >=100){
+        if(gpr.size() >=50){
             return;
         }
         gpr[ap_id] = std::shared_ptr<signal_strength_estimator>(new signal_strength_estimator(nh, ap_id, fixed_frame_id));

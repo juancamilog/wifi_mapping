@@ -2,11 +2,7 @@
 signal_strength_estimator::signal_strength_estimator(){
     gp_mutex = std::shared_ptr<std::mutex>(new std::mutex());
     GP = new gaussian_process(3);
-    Eigen::VectorXd init_params = Eigen::VectorXd::Random(5);
-    for (int i=0; i<init_params.size(); i++){
-        init_params(i) += 1.0;
-    }
-    GP->set_opt_starting_point(init_params);
+    GP->set_opt_random_start(5,5);
 }
 
 signal_strength_estimator::signal_strength_estimator(ros::NodeHandle &nh, std::string id, std::string frame_id){
@@ -26,11 +22,7 @@ signal_strength_estimator::signal_strength_estimator(ros::NodeHandle &nh, std::s
     variance_publisher = nh.advertise<sensor_msgs::PointCloud2>("pcloud_"+ap_id+"_var",1,true);
 
     GP = new gaussian_process(3);
-    Eigen::VectorXd init_params = Eigen::VectorXd::Random(5);
-    for (int i=0; i<init_params.size(); i++){
-        init_params(i) += 1.0;
-    }
-    GP->set_opt_starting_point(init_params);
+    GP->set_opt_random_start(5,5);
 }
 
 void signal_strength_estimator::publish_clouds(){ 
@@ -43,7 +35,7 @@ void signal_strength_estimator::publish_clouds(){
     pcl::PointCloud<pcl::PointXYZI> cloud_mean, cloud_var;
 
     double grid_size = 35; // 10 meters
-    int n_points = 15000; 
+    int n_points = 50000; 
 
     cloud_mean.header.frame_id = fixed_frame_id;
     cloud_var.header.frame_id = fixed_frame_id;
@@ -54,6 +46,7 @@ void signal_strength_estimator::publish_clouds(){
     Eigen::VectorXd X = VectorXd::Zero(GP->input_dimensions());
 
     for (idx=0; idx < n_points ; idx++){
+            
             pcl::PointXYZI mean, variance;
             X = VectorXd::Random(2)*grid_size;
             mean.x = X[0]; variance.x = X[0];
@@ -81,7 +74,7 @@ void signal_strength_estimator::process_measurement(tf::StampedTransform &pose_t
     tf::vectorTFToEigen(pose_transform.getOrigin(),pos_x);
     Eigen::VectorXd x(pos_x);
 
-    double ss = wifi_msg->signal_strength/255.0; 
+    double ss = 10*wifi_msg->signal_strength/255.0; 
      
     ROS_INFO("New sample for %s (essid: %s)",ap_id.c_str(),wifi_msg->essid.c_str()); 
     ROS_INFO("pose_msg time: %f, wifi_msg time: %f", pose_transform.stamp_.toSec(), wifi_msg->header.stamp.toSec()); 
@@ -105,13 +98,9 @@ void signal_strength_estimator::process_measurement(tf::StampedTransform &pose_t
         ROS_INFO("Added sample to GP estimator");
         ROS_INFO("Total data points: %d",GP->dataset_size());
         // optimize every 10 data points
-        if(GP->dataset_size()%5 == 0){
-            Eigen::VectorXd init_params = Eigen::VectorXd::Random(5);
-            for (int i=0; i<init_params.size(); i++){
-                init_params(i) += 1.0;
-                init_params(i) *= 5.0;
-            }
-            GP->set_opt_starting_point(init_params);
+        if(GP->dataset_size()%2 == 0){
+            GP->init(GP->kernel->parameters);
+            GP->set_opt_random_start(5,5);
             gp_mutex->lock();
             GP->optimize_parameters();
             gp_mutex->unlock();
