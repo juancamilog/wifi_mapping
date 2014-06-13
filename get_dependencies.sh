@@ -40,4 +40,5 @@ ln -s $DEPS_DIR/eigen include/eigen
 ./build.sh
 cd $WIFI_MAPPING_DIR
 
-
+echo "Getting libiw..."
+sudo apt-get install libiw-dev
