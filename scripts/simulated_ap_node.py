@@ -1,18 +1,64 @@
-from ap_simulator import *
+#!/usr/bin/env python2
+from radio_model import *
 import rospy
 import tf
 from wifi_mapping.msg import wifi_measurement
+import json
 
 class simulated_ap:
     def __init__(self):
-       
+       self.publisher = rospy.Publisher("/wifi_measurement",wifi_measurement, queue_size=1)
+
+       self.access_point_model = radio_model()
+       # get radio propagation model type
+       model_type = rospy.get_param("radio_model","log_distance")
+       if model_type == "log_distance":
+            params = json.loads(rospy.get_param("model_params", '{"location": [0,0,0], "transmit_power": 20, "path_loss_exponent": 2}'))
+            self.access_point_model.set_function(path_loss_dbm, params)
+       elif model_type == "trained_gp":
+            pass
        pass
+
+       self.tf_listener = tf.TransformListener()
+
+       #self.pose_frame_id = rospy.get_param("base_frame_id", 'base_footprint')
+       #self.world_frame_id = rospy.get_param("fixed_frame_id", 'world')
+       self.pose_frame_id = 'turtle1'
+       self.world_frame_id = 'world'
        
-    def publish_wifi_measurement():
+       try:
+           self.tf_listener.waitForTransform(self.pose_frame_id, self.world_frame_id, rospy.Time.now(), rospy.Duration(1.0));
+       except tf.Exception:
+           pass
+       
+    def publish_wifi_measurement(self):
         # get location of robot from tf transform
+        now = rospy.Time.now()
+        try:
+            self.tf_listener.waitForTransform(self.pose_frame_id, self.world_frame_id, now, rospy.Duration(1.0));
+            (trans,rot) = self.tf_listener.lookupTransform(self.pose_frame_id, self.world_frame_id, now)
+        except tf.Exception:
+            pass
        
         # compute singal strength from location
-        
+        rss = self.access_point_model.get_rss(trans)
+
         # populate the wifi_measurement message
         ap_msg = wifi_measurement()
+        ap_msg.id = rospy.get_name()[1:]
+        ap_msg.signal_strength = rss
+        ap_msg.noise = 0
+        ap_msg.channel = 0
 
+        self.publisher.publish(ap_msg)
+
+if __name__=='__main__':
+    #rospy.init_node('access_point', anonymous=True)
+    rospy.init_node('access_point')
+    rate_hz = rospy.get_param("rate_hz", 0.5)
+    r = rospy.Rate(rate_hz)
+    ap = simulated_ap()
+
+    while not rospy.is_shutdown():
+        ap.publish_wifi_measurement()
+        r.sleep()
