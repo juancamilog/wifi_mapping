@@ -13,7 +13,7 @@ class simulated_ap:
        # get radio propagation model type
        model_type = rospy.get_param("radio_model","log_distance")
        if model_type == "log_distance":
-            params = json.loads(rospy.get_param("model_params", '{"location": [0,0,0], "transmit_power": 20, "path_loss_exponent": 2}'))
+            params = json.loads(rospy.get_param("model_params", '{"location": [5,5,0], "transmit_power": 20, "path_loss_exponent": 2}'))
             self.access_point_model.set_function(path_loss_dbm, params)
        elif model_type == "trained_gp":
             pass
@@ -27,7 +27,7 @@ class simulated_ap:
        self.world_frame_id = 'world'
        
        try:
-           self.tf_listener.waitForTransform(self.pose_frame_id, self.world_frame_id, rospy.Time.now(), rospy.Duration(1.0));
+           self.tf_listener.waitForTransform(self.world_frame_id, self.pose_frame_id, rospy.Time.now(), rospy.Duration(1.0));
        except tf.Exception:
            pass
        
@@ -35,13 +35,15 @@ class simulated_ap:
         # get location of robot from tf transform
         now = rospy.Time.now()
         try:
-            self.tf_listener.waitForTransform(self.pose_frame_id, self.world_frame_id, now, rospy.Duration(1.0));
-            (trans,rot) = self.tf_listener.lookupTransform(self.pose_frame_id, self.world_frame_id, now)
-        except tf.Exception:
-            pass
+            self.tf_listener.waitForTransform(self.world_frame_id, self.pose_frame_id, now, rospy.Duration(1.0));
+            (trans,rot) = self.tf_listener.lookupTransform(self.world_frame_id, self.pose_frame_id, now)
        
-        # compute singal strength from location
-        rss = self.access_point_model.get_rss(trans)
+            # compute singal strength from location
+            rss = self.access_point_model.get_rss(trans)
+            rospy.loginfo(trans)
+            rospy.loginfo(self.access_point_model.params['location'])
+        except tf.Exception:
+            rss = -127
 
         # populate the wifi_measurement message
         ap_msg = wifi_measurement()

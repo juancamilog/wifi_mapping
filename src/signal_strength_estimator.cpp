@@ -34,7 +34,7 @@ void signal_strength_estimator::publish_clouds(){
 
     pcl::PointCloud<pcl::PointXYZI> cloud_mean, cloud_var;
 
-    double grid_size = 35; // 10 meters
+    double grid_size = 15; // 10 meters
     int n_points = 50000; 
 
     cloud_mean.header.frame_id = fixed_frame_id;
@@ -88,7 +88,7 @@ void signal_strength_estimator::process_measurement(tf::StampedTransform &pose_t
 
     GP->prediction(x,predicted_signal_strength,prediction_variance);
     ROS_INFO("Measured Signal Strength: %f, Prediction: %f, Variance: %f",wifi_msg->signal_strength,predicted_signal_strength[0],prediction_variance);
-    bool add_measurement = (prediction_variance >= 0.5*variance_threshold) || (GP->dataset_size()<50);
+    bool add_measurement = (prediction_variance >= 0.5*variance_threshold) || (GP->dataset_size()<5);
     
     if(add_measurement){
         gp_mutex->lock();
@@ -98,7 +98,7 @@ void signal_strength_estimator::process_measurement(tf::StampedTransform &pose_t
         ROS_INFO("Added sample to GP estimator");
         ROS_INFO("Total data points: %d",GP->dataset_size());
         // optimize every 10 data points
-        if(GP->dataset_size()%2 == 0){
+        if(GP->dataset_size()%10 == 0){
             GP->init(GP->kernel->parameters);
             GP->set_opt_random_start(5,5);
             gp_mutex->lock();
