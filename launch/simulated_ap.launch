@@ -1,0 +1,25 @@
+<launch>
+    <node pkg="turtlesim" type="turtlesim_node" name="turtle1"/>
+    <node pkg="turtle_tf" type="turtle_tf_broadcaster" name="turtle1_tf" args="turtle1"/>
+    <node pkg="wifi_mapping" type="simulated_ap_node.py" name="ap_1">
+        <param  name="base_frame_id" value="turtle1"/>
+        <param  name="fixed_frame_id" value="world"/>
+        <param  name="model_type" value="log_distance"/>
+        <param  name="model_params" value='{"location": [5,5,0], "transmit_power": 30, "path_loss_exponent": 1.8}'/>
+    </node>
+    <node pkg="wifi_mapping" type="simulated_ap_node.py" name="ap_2">
+        <param  name="base_frame_id" value="turtle1"/>
+        <param  name="fixed_frame_id" value="world"/>
+        <param  name="model_type" value="log_distance"/>
+        <param  name="model_params" value='{"location": [0,10,3], "transmit_power": 20, "path_loss_exponent": 1.5}'/>
+    </node>
+
+    <node pkg="wifi_mapping" type="wifi_mapping_node" name="wifi_gp" output="screen">
+        <!--param  name="wifi_topic" value="/wifi_scanner/wifi_measurement"/ -->
+        <!-- param  name="base_frame_id" value="base_footprint"/ -->
+        <!-- param  name="fixed_frame_id" value="map"/ -->
+        <param  name="wifi_topic" value="/wifi_measurement"/>
+        <param  name="base_frame_id" value="turtle1"/>
+        <param  name="fixed_frame_id" value="world"/>
+    </node>
+</launch>

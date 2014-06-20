@@ -74,7 +74,7 @@ void signal_strength_estimator::process_measurement(tf::StampedTransform &pose_t
     tf::vectorTFToEigen(pose_transform.getOrigin(),pos_x);
     Eigen::VectorXd x(pos_x);
 
-    double ss = 10*wifi_msg->signal_strength/255.0; 
+    double ss = wifi_msg->signal_strength; 
      
     ROS_INFO("New sample for %s (essid: %s)",ap_id.c_str(),wifi_msg->essid.c_str()); 
     ROS_INFO("pose_msg time: %f, wifi_msg time: %f", pose_transform.stamp_.toSec(), wifi_msg->header.stamp.toSec()); 
@@ -88,7 +88,7 @@ void signal_strength_estimator::process_measurement(tf::StampedTransform &pose_t
 
     GP->prediction(x,predicted_signal_strength,prediction_variance);
     ROS_INFO("Measured Signal Strength: %f, Prediction: %f, Variance: %f",wifi_msg->signal_strength,predicted_signal_strength[0],prediction_variance);
-    bool add_measurement = (prediction_variance >= 0.5*variance_threshold) || (GP->dataset_size()<5);
+    bool add_measurement = (prediction_variance >= variance_threshold) || (GP->dataset_size()<2);
     
     if(add_measurement){
         gp_mutex->lock();
@@ -97,10 +97,10 @@ void signal_strength_estimator::process_measurement(tf::StampedTransform &pose_t
 
         ROS_INFO("Added sample to GP estimator");
         ROS_INFO("Total data points: %d",GP->dataset_size());
-        // optimize every 10 data points
-        if(GP->dataset_size()%10 == 0){
+        // optimize every 20 data points
+        if(GP->dataset_size()%20 == 0){
             GP->init(GP->kernel->parameters);
-            GP->set_opt_random_start(5,5);
+            GP->set_opt_random_start(100,100);
             gp_mutex->lock();
             GP->optimize_parameters();
             gp_mutex->unlock();
