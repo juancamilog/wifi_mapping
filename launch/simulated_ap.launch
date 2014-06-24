@@ -14,8 +14,8 @@
         <param  name="model_params" value='{"location": [0,10,3], "transmit_power": 20, "path_loss_exponent": 1.5}'/>
     </node>
 
-    <node pkg="wifi_mapping" type="wifi_mapping_node" name="wifi_gp" output="screen">
-        <!--param  name="wifi_topic" value="/wifi_scanner/wifi_measurement"/ -->
+    <node pkg="wifi_mapping" type="wifi_mapping_node" name="wifi_gp" output="screen" launch-prefix="gdb -ex run --args">
+        <!-- param  name="wifi_topic" value="/wifi_scanner/wifi_measurement"/ -->
         <!-- param  name="base_frame_id" value="base_footprint"/ -->
         <!-- param  name="fixed_frame_id" value="map"/ -->
         <param  name="wifi_topic" value="/wifi_measurement"/>

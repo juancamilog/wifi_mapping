@@ -44,6 +44,15 @@ void wifi_callback(ros::NodeHandle &nh, const wifi_mapping::wifi_measurement::Co
     std::string ap_id = wifi_msg->id;
     ROS_INFO("============>\n\twifi_msg->header.seq: %d, wifi_msg->header.stamp: %f",wifi_msg->header.seq,wifi_msg->header.stamp.toSec());
     
+    // use tf to get the current pose estimate
+    try {
+        pose_listener->waitForTransform(fixed_frame_id,base_frame_id,wifi_msg->header.stamp,ros::Duration(1.0));
+        pose_listener->lookupTransform(fixed_frame_id,base_frame_id,wifi_msg->header.stamp, pose_transform);
+    } catch (tf::TransformException ex){
+        ROS_ERROR("Caught exception while looking up transform: %s",ex.what());
+        return;
+    }
+
     // create new GP if it does not already exist
     if (gpr.find(ap_id) == gpr.end() ){
         // keep a bounded number of GP in memory
@@ -74,7 +83,11 @@ int main(int argc, char **argv)
     spinner.start();
     ros::Rate r(50);
     while ( ros::ok() ){
-        pose_monitor();        
+        //pose_monitor();
+        // optimize all gpr
+        for ( std::map<std::string,std::shared_ptr<signal_strength_estimator> >::iterator it= gpr.begin(); it != gpr.end(); ++it){
+            (*it).second->optimize();
+        }
         r.sleep();
     }
     return 0;

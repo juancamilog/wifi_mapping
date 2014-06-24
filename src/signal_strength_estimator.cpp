@@ -27,9 +27,10 @@ signal_strength_estimator::signal_strength_estimator(ros::NodeHandle &nh, std::s
 
 void signal_strength_estimator::publish_clouds(){ 
     gp_mutex->lock();
-    //if (gp_pcl_pub.getNumSubscribers()==0){
-    //    return;
-    //}
+    /*if (mean_publisher.getNumSubscribers()==0 && variance_publisher.getNumSubscribers()==0){
+        gp_mutex->unlock();
+        return;
+    }*/
     ROS_INFO("Publishing point cloud for %s ",ap_id.c_str());
 
     pcl::PointCloud<pcl::PointXYZI> cloud_mean, cloud_var;
@@ -48,9 +49,10 @@ void signal_strength_estimator::publish_clouds(){
     for (idx=0; idx < n_points ; idx++){
             
             pcl::PointXYZI mean, variance;
-            X = VectorXd::Random(2)*grid_size;
+            X = VectorXd::Random(3)*grid_size;
             mean.x = X[0]; variance.x = X[0];
             mean.y = X[1]; variance.y = X[1];
+            X(2) = 0.0;
 
             // computed predicted singal measruement and variance
             GP->prediction(X,z_mean,z_var);
@@ -92,20 +94,41 @@ void signal_strength_estimator::process_measurement(tf::StampedTransform &pose_t
     
     if(add_measurement){
         gp_mutex->lock();
+        ROS_INFO("Adding sample to GP estimator");
         GP->add_sample(x,ss);
         gp_mutex->unlock();
 
         ROS_INFO("Added sample to GP estimator");
         ROS_INFO("Total data points: %d",GP->dataset_size());
         // optimize every 20 data points
-        if(GP->dataset_size()%20 == 0){
-            GP->init(GP->kernel->parameters);
-            GP->set_opt_random_start(100,100);
+        /*if(GP->dataset_size()%20 == 0 && GP->dataset_size() > 2){
+            ROS_INFO_STREAM("Optimizing "<<ap_id);
             gp_mutex->lock();
+            ROS_INFO("mutex locked ");
+            GP->init(GP->kernel->parameters);
+            ROS_INFO("init gp ");
+            GP->set_opt_random_start(100,100);
             GP->optimize_parameters();
+            ROS_INFO_STREAM("new log likelihood "<<GP->log_marginal_likelihood());
             gp_mutex->unlock();
-        }
+            ROS_INFO("mutex unlocked ");
+        }*/
         variance_threshold = GP->compute_maximum_variance();
         publish_clouds();
    }
-}
+};
+
+void signal_strength_estimator::optimize(double stopping_criterion, int solver, int restarts, double scale, double offset){
+    if(GP->dataset_size() > 5){
+        /*gp_mutex->lock();
+        GP->init(GP->kernel->parameters);
+        GP->optimize_parameters_random_restarts(stopping_criterion, solver, restarts, scale, offset);
+        gp_mutex->unlock();*/
+        gp_mutex->lock();
+        GP->init(GP->kernel->parameters);
+        GP->set_opt_random_start(1000,1000);
+        GP->optimize_parameters();
+        ROS_INFO_STREAM("new log likelihood "<<GP->log_marginal_likelihood());
+        gp_mutex->unlock();
+    }
+};
