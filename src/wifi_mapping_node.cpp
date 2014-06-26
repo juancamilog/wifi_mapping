@@ -86,7 +86,7 @@ int main(int argc, char **argv)
         //pose_monitor();
         // optimize all gpr
         for ( std::map<std::string,std::shared_ptr<signal_strength_estimator> >::iterator it= gpr.begin(); it != gpr.end(); ++it){
-            (*it).second->optimize();
+            (*it).second->optimize(1e-5,2,1,1000,1000);
         }
         r.sleep();
     }

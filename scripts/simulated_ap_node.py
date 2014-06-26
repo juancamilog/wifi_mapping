@@ -14,7 +14,7 @@ class simulated_ap:
        model_type = rospy.get_param("~radio_model","log_distance")
        if model_type == "log_distance":
             params = json.loads(rospy.get_param("~model_params", '{"location": [5,5,0], "transmit_power": 20, "path_loss_exponent": 2}'))
-            self.access_point_model.set_function(path_loss_dbm, params)
+            self.access_point_model.set_function(path_loss_w, params)
        elif model_type == "trained_gp":
             pass
        pass
