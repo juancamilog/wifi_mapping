@@ -42,7 +42,7 @@ void wifi_callback(ros::NodeHandle &nh, const wifi_mapping::wifi_measurement::Co
         return;
     }
     std::string ap_id = wifi_msg->id;
-    ROS_INFO("============>\n\twifi_msg->header.seq: %d, wifi_msg->header.stamp: %f",wifi_msg->header.seq,wifi_msg->header.stamp.toSec());
+    //ROS_INFO("============>\n\twifi_msg->header.seq: %d, wifi_msg->header.stamp: %f",wifi_msg->header.seq,wifi_msg->header.stamp.toSec());
     
     // use tf to get the current pose estimate
     try {
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
     nh.param<std::string>("fixed_frame_id",fixed_frame_id,DEFAULT_FIXED_FRAME_ID);
     nh.param<std::string>("base_frame_id",base_frame_id,DEFAULT_BASE_FRAME_ID);
   
-    ros::Subscriber wifi_scan_sub = nh.subscribe<wifi_mapping::wifi_measurement>(wifi_topic, 10, boost::bind(&wifi_callback, boost::ref(nh), _1));
+    ros::Subscriber wifi_scan_sub = nh.subscribe<wifi_mapping::wifi_measurement>(wifi_topic, 5, boost::bind(&wifi_callback, boost::ref(nh), _1));
 
     ros::AsyncSpinner spinner(1);
     spinner.start();
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
         //pose_monitor();
         // optimize all gpr
         for ( std::map<std::string,std::shared_ptr<signal_strength_estimator> >::iterator it= gpr.begin(); it != gpr.end(); ++it){
-            (*it).second->optimize(1e-5,2,1,1000,1000);
+            (*it).second->optimize(1e-10,2,1,1e5,1e5);
         }
         r.sleep();
     }
