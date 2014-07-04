@@ -35,7 +35,6 @@ void pose_monitor(){
     }
 }
 
-
 void wifi_callback(ros::NodeHandle &nh, const wifi_mapping::wifi_measurement::ConstPtr &wifi_msg){
     // TODO this is done to ignore the access point running on our husky robot. Change to a parameter based setup (i.e. a yaml file with essid's to ignore)
     if (wifi_msg->essid.compare(0,3,"CPR")==0){
@@ -60,10 +59,11 @@ void wifi_callback(ros::NodeHandle &nh, const wifi_mapping::wifi_measurement::Co
             return;
         }
         gpr[ap_id] = std::shared_ptr<signal_strength_estimator>(new signal_strength_estimator(nh, ap_id, fixed_frame_id));
+        //gpr[ap_id]->GP->set_RBF_kernel();
+        //gpr[ap_id]->GP->set_debug_print(true);;
     } 
     gpr[ap_id]->process_measurement(pose_transform, wifi_msg);
 };
-
 
 int main(int argc, char **argv)
 {
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
         //pose_monitor();
         // optimize all gpr
         for ( std::map<std::string,std::shared_ptr<signal_strength_estimator> >::iterator it= gpr.begin(); it != gpr.end(); ++it){
-            (*it).second->optimize(1e-10,2,1,1e5,1e5);
+            (*it).second->optimize(1e-12,2,5,10,10);
         }
         r.sleep();
     }

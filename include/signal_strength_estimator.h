@@ -15,7 +15,6 @@
 
 class signal_strength_estimator{
     private:
-        gaussian_process* GP;
         double variance_threshold;
         std::string fixed_frame_id;
         std::string ap_id;
@@ -32,4 +31,5 @@ class signal_strength_estimator{
         void process_measurement(tf::StampedTransform &pose_transform, const wifi_mapping::wifi_measurement::ConstPtr &wifi_msg);
 
         void optimize(double stopping_criterion=1e-7,int solver = 0, int restarts=2, double scale=1.0, double offset = 0.0);
+        gaussian_process* GP;
 };
