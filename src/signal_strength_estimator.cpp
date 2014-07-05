@@ -33,7 +33,7 @@ void signal_strength_estimator::publish_clouds(){
 
     pcl::PointCloud<pcl::PointXYZI> cloud_mean, cloud_var;
 
-    double grid_size = 15; // 10 meters
+    double grid_size = 45; // 10 meters
     int n_points = 50000; 
 
     cloud_mean.header.frame_id = fixed_frame_id;
@@ -77,7 +77,9 @@ void signal_strength_estimator::process_measurement(tf::StampedTransform &pose_t
     tf::vectorTFToEigen(pose_transform.getOrigin(),pos_x);
     Eigen::VectorXd x(pos_x);
 
-    double ss = wifi_msg->signal_strength; 
+    //double ss = wifi_msg->signal_strength; 
+    double ss = std::pow(10.0,static_cast<signed char>(wifi_msg->signal_strength)/10.0); 
+
     essid = wifi_msg->essid; 
     double prediction_variance;
     Eigen::VectorXd predicted_signal_strength,predictive_error, predictive_variance;
@@ -85,12 +87,9 @@ void signal_strength_estimator::process_measurement(tf::StampedTransform &pose_t
     GP->prediction(x,predicted_signal_strength,prediction_variance);
     GP->predictive_error_and_variance(predictive_error, predictive_variance,0);
     variance_threshold = predictive_variance.maxCoeff();
-
-    ROS_INFO("[%s,%s] Variance Threshold: %f",ap_id.c_str(),wifi_msg->essid.c_str(), variance_threshold);
     publish_clouds();
-    ROS_INFO("[%s,%s] Variance Threshold: %f",ap_id.c_str(),wifi_msg->essid.c_str(), variance_threshold);
 
-    ROS_INFO("[%s,%s] Measured Signal Strength: %f, Prediction: %f, Variance: %f, Variance Threshold: %f",ap_id.c_str(),wifi_msg->essid.c_str(),wifi_msg->signal_strength,predicted_signal_strength[0],prediction_variance, variance_threshold);
+    ROS_INFO("[%s,%s] Measured Signal Strength: %f, Prediction: %f, Variance: %f, Variance Threshold: %f",ap_id.c_str(),wifi_msg->essid.c_str(),ss,predicted_signal_strength[0],prediction_variance, variance_threshold);
     bool add_measurement = (prediction_variance > variance_threshold);// || (GP->dataset_size()<5);
     
     if(add_measurement){

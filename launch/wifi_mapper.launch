@@ -3,8 +3,8 @@
         <!--param  name="wifi_topic" value="/wifi_scanner/wifi_measurement"/ -->
         <!-- param  name="base_frame_id" value="base_footprint"/ -->
         <!-- param  name="fixed_frame_id" value="map"/ -->
-        <param  name="wifi_topic" value="/wifi_measurement"/>
-        <param  name="base_frame_id" value="turtle1"/>
-        <param  name="fixed_frame_id" value="world"/>
+        <param  name="wifi_topic" value="/wifi_scanner/wifi_measurement"/>
+        <param  name="base_frame_id" value="base_footprint"/>
+        <param  name="fixed_frame_id" value="map"/>
     </node>
 </launch>
